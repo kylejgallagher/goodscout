@@ -74,7 +74,7 @@ print(f"Total unique application/resume pairs: {len(final)}")
 # SQL query. exclude data from the day you're making the query for. in the query put todays date
 emp_response_direct_only = """
 SELECT resume_contact_response.date_created, employer.company_name_en, employer.company_name_ja, resume_contact_response.employer, 
-resume_contact.resume_id,resume_contact_response.resume_contact_id, division.division_id, resume_contact_response.response
+resume_contact.resume_id,resume_contact_response.resume_contact_id, division.division_id, resume_contact_response.response, employer.employer_type
 FROM resume_contact_response
 LEFT JOIN resume_contact ON resume_contact_response.resume_contact_id = resume_contact.resume_contact_id
 
