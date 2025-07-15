@@ -2,7 +2,7 @@ import pandas as pd
 
 # Can replace with original file "for_unique_monthly_divID_jun5test.csv"
 
-file = "scout7825"
+file = "scout71525"
 df = pd.read_csv(f"{file}.csv")
 
 # Convert dates if needed
@@ -51,6 +51,7 @@ results = grouped.apply(process_group)
 
 # Drop empty groups and reset index
 final_df = results.dropna(how='any').reset_index(drop=True)
+final_df["type"] = "Scout"
 
 # switch between the two for date formatting
 # final_df["date_created"] = final_df["date_created"].dt.strftime("%Y/%m/%d")
@@ -61,7 +62,7 @@ final_df = results.dropna(how='any').reset_index(drop=True)
 # print(df.columns())
 
 # final = final_df.drop(columns=["response", "employer"])
-final = final_df.drop(columns=["employer"])
+final = final_df.drop(columns=["employer", "response", "messages_until_keyword"])
 
 # May need to save as UTF-8 for Zoho. Former filename "client_message_for_unique_divID.csv"
 final.to_csv(f"{file}_filtered.csv", index=False)
@@ -73,8 +74,7 @@ print(f"Total unique application/resume pairs: {len(final)}")
 
 # SQL query. exclude data from the day you're making the query for. in the query put todays date
 emp_response_direct_only = """
-SELECT resume_contact_response.date_created, employer.company_name_en, employer.company_name_ja, resume_contact_response.employer, 
-resume_contact.resume_id,resume_contact_response.resume_contact_id, division.division_id, resume_contact_response.response, employer.employer_type
+SELECT resume_contact_response.resume_contact_id, resume_contact_response.date_created, employer.employer_id, employer.employer_type, resume_contact_response.employer, division.division_id, resume_contact_response.response, resume_contact.resume_id
 FROM resume_contact_response
 LEFT JOIN resume_contact ON resume_contact_response.resume_contact_id = resume_contact.resume_contact_id
 
@@ -96,6 +96,33 @@ LEFT JOIN(
 on employer.employer_id = division.employer_id
 WHERE
 	resume_contact_response.employer = 0 AND
-    resume_contact_response.date_created > '2025-01-01' ORDER BY resume_contact_response.date_created DESC;
+    resume_contact_response.date_created BETWEEN '2024-01-01' and '2025-07-11'; 
+"""
+
+with_JSID = """
+SELECT resume_contact_response.resume_contact_id, resume_contact_response.date_created, employer.employer_id, employer.employer_type, resume_contact_response.employer, division.division_id, resume_contact_response.response, resume_contact.resume_id, resume_contact.job_seeker_id
+FROM resume_contact_response
+LEFT JOIN resume_contact ON resume_contact_response.resume_contact_id = resume_contact.resume_contact_id
+
+LEFT JOIN employer ON resume_contact.employer_id = employer.employer_id
+
+LEFT JOIN(
+    SELECT
+        employer_id,
+        division_id
+    FROM
+        employer_access
+    LEFT JOIN crm_v2.quote_detail ON
+        crm_v2.quote_detail.quote_detail_id = employer_access.quote_detail_id
+    LEFT JOIN crm_v2.quote ON
+        crm_v2.quote_detail.quote_id = crm_v2.quote.quote_id
+    GROUP BY
+        division_id
+) division
+on employer.employer_id = division.employer_id
+WHERE
+	resume_contact_response.employer = 0 AND
+    resume_contact_response.date_created BETWEEN '2024-01-01' and '2025-07-15'; 
+
 
 """
